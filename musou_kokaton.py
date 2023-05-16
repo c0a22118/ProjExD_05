@@ -100,6 +100,10 @@ class Bird(pg.sprite.Sprite):
         引数2 screen：画面Surface
         """
         sum_mv = [0, 0]
+        if key_lst[pg.K_LSHIFT]:
+            self.speed = 20
+        else:
+            self.speed = 10
         for k, mv in __class__.delta.items():
             if key_lst[k]:
                 self.rect.move_ip(+self.speed*mv[0], +self.speed*mv[1])
@@ -216,6 +220,20 @@ class Explosion(pg.sprite.Sprite):
         if self.life < 0:
             self.kill()
 
+class Shield(pg.sprite.Sprite):
+    def __init__(self, bird: Bird, life: int):
+        super().__init__()
+        self.image = pg.Surface((20, bird.rect.height*2))
+        pg.draw.rect(self.image, (0, 0, 0), pg.Rect(0, 0, 20, bird.rect.height*2))
+        self.rect = self.image.get_rect()
+        self.rect.centerx = bird.rect.centerx+80
+        self.rect.centery = bird.rect.centery
+        self.life = life
+
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
 
 class Enemy(pg.sprite.Sprite):
     """
@@ -262,6 +280,9 @@ class Score:
     def score_up(self, add):
         self.score += add
 
+    def score_down(self, down):
+        self.score += down
+
     def update(self, screen: pg.Surface):
         self.image = self.font.render(f"Score: {self.score}", 0, self.color)
         screen.blit(self.image, self.rect)
@@ -278,6 +299,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    shields = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -292,6 +314,10 @@ def main():
                 if score.score >= 100:
                     bird.change_state("hyper", 500)
                     score.score_up(-100)
+            if event.type == pg.KEYDOWN and event.key == pg.K_CAPSLOCK:
+                if score.score > 50 and len(shields) == 0:
+                    score.score -= 50
+                    shields.add(Shield(bird, 400))
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -310,7 +336,6 @@ def main():
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
-
         for bomb in pg.sprite.spritecollide(bird, bombs, True):
             if bird.state == "hyper":
                 exps.add(Explosion(bomb,50))
@@ -321,8 +346,6 @@ def main():
                 pg.display.update()
                 time.sleep(2)
                 return
-        
-        print(bird.state)
 
         bird.update(key_lst, screen)
         beams.update()
@@ -331,6 +354,8 @@ def main():
         emys.draw(screen)
         bombs.update()
         bombs.draw(screen)
+        shields.update()
+        shields.draw(screen)
         exps.update()
         exps.draw(screen)
         score.update(screen)
