@@ -88,6 +88,10 @@ class Bird(pg.sprite.Sprite):
         引数2 screen：画面Surface
         """
         sum_mv = [0, 0]
+        if key_lst[pg.K_LSHIFT]:
+            self.speed = 20
+        else:
+            self.speed = 10
         for k, mv in __class__.delta.items():
             if key_lst[k]:
                 self.rect.move_ip(+self.speed*mv[0], +self.speed*mv[1])
@@ -258,8 +262,8 @@ def main():
     bird = Bird(3, (900, 400))
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
-    exps = pg.sprite.Group()
-    emys = pg.sprite.Group()
+    exps = pg.sprite.Group() # 爆発のグループ
+    emys = pg.sprite.Group() # 敵機のグループ
 
     tmr = 0
     clock = pg.time.Clock()
