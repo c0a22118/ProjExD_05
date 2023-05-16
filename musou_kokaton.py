@@ -383,6 +383,28 @@ class Enemy(pg.sprite.Sprite):
         self.rect.centery += self.vy
 
 
+class NeoGravity(pg.sprite.Sprite):
+    """
+    超強力重力場に関するクラス
+    """
+    def __init__(self):
+        super().__init__()
+        self.image = pg.Surface((WIDTH*2,HEIGHT*2))
+        self.image.set_alpha(100) # 不透明度を100に設定
+        pg.draw.rect(self.image, (10,10,10), pg.Rect(0,0,WIDTH,HEIGHT))
+        self.rect = self.image.get_rect()
+        self.rect.center = (0,0)
+        self.life = 400
+
+    def update(self):
+        """
+        出現時間500を1減算していき,0になったら消す
+        """
+        self.life -= 1
+        if self.life <= 0:
+            self.kill()
+
+
 class Score:
     """
     打ち落とした爆弾，敵機の数をスコアとして表示するクラス
@@ -419,6 +441,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    ngravity = pg.sprite.Group()
     shields = pg.sprite.Group()
 
     tmr = 0
@@ -430,6 +453,9 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.score >= 200:
+                ngravity.add(NeoGravity())
+                score.score -= 200
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE and key_lst[pg.K_LSHIFT]:
                     beams.add(Beam1(bird))
                     beams.add(Beam2(bird))
@@ -462,6 +488,16 @@ def main():
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.score_up(1)  # 1点アップ
+
+        for emy in pg.sprite.groupcollide(emys, ngravity, True, False).keys(): # NeoGravityとEnemy衝突
+            exps.add(Explosion(emy, 100))  # 爆発エフェクト
+            score.score_up(10)  # 10点アップ
+            bird.change_img(6, screen)  # こうかとん喜びエフェクト
+
+        for bomb in pg.sprite.groupcollide(bombs, ngravity, True, False).keys(): # NeoGravityとBomb衝突
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.score_up(1)  # 1点アップ
+            
         for bomb in pg.sprite.spritecollide(bird, bombs, True):
             if bird.state == "hyper":
                 exps.add(Explosion(bomb,50))
@@ -472,6 +508,7 @@ def main():
                 pg.display.update()
                 time.sleep(2)
                 return
+
 
         bird.update(key_lst, screen)
         beams.update()
@@ -484,6 +521,8 @@ def main():
         shields.draw(screen)
         exps.update()
         exps.draw(screen)
+        ngravity.update()
+        ngravity.draw(screen)
         score.update(screen)
         pg.display.update()
         tmr += 1
